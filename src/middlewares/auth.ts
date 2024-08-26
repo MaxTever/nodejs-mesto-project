@@ -1,42 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { UNAUTHORIZED_ERROR } from '../helpers/errors';
 
 interface SessionRequest extends Request {
     user?: string | JwtPayload;
 }
 
-const handleAuthError = (res: Response) => {
-  res
-  .status(401)
-  .send({ message: 'Необходима авторизация' });
-};
-
-const extractBearerToken = (header: string) => {
-  return header.replace('Bearer ', '');
-};
+const extractBearerToken = (header: string) => header.replace('Bearer ', '');
 
 export default (req: SessionRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
 
-  console.log('Authorization header:', authorization);
-
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return handleAuthError(res);
+    return next(new UNAUTHORIZED_ERROR('Необходима авторизация'));
   }
 
   const token = extractBearerToken(authorization);
-  console.log('Token:', token);
   let payload;
 
   try {
     payload = jwt.verify(token, 'super-strong-secret');
-    console.log('Payload:', payload);
+    req.user = payload; // записываем пейлоуд в объект запроса
+    next(); // пропускаем запрос дальше
   } catch (err) {
     console.error('Token verification failed:', err);
-    return handleAuthError(res);
+    return next(new UNAUTHORIZED_ERROR('Неверный токен или срок действия токена истек'));
   }
-
-  req.user = payload; // записываем пейлоуд в объект запроса
-  console.log('User:', req.user);
-  next(); // пропускаем запрос дальше
 };

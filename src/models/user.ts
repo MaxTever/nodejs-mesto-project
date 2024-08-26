@@ -1,4 +1,6 @@
-import { Schema, model, Model, Document } from 'mongoose';
+import {
+  Schema, model, Model, Document,
+} from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcryptjs';
 
@@ -15,20 +17,19 @@ interface UserModel extends Model<IUser> {
 }
 
 export const userSchema = new Schema<IUser, UserModel>({
-  email:{
+  email: {
     type: String,
     required: true,
     unique: true,
     validate: {
       validator: (v: string) => validator.isEmail(v),
       message: 'Некорректный email',
-    }
+    },
   },
   password: {
     type: String,
     required: true,
     minlength: 6,
-    maxlength: 60,
   },
   name: {
     type: String,
@@ -51,27 +52,25 @@ export const userSchema = new Schema<IUser, UserModel>({
       validator: (v: string) => validator.isURL(v),
       message: 'Некорректный URL',
     },
-    default: 'https://pictures.s3.yandex.net/resources/Untitled_-_2024-05-06T195257.404_1715003590.png'
+    default: 'https://pictures.s3.yandex.net/resources/Untitled_-_2024-05-06T195257.404_1715003590.png',
   },
 });
 
-
 userSchema.static('findUserByCredentials', function findUserByCredentials(email: string, password: string) {
   return this.findOne({ email })
-  .then((user) => {
-    if (!user) {
-      return Promise.reject(new Error('Неправильные почта или пароль'));
-    }
-
-    return bcrypt.compare(password, user.password).then((matched) => {
-      if (!matched) {
-        return Promise.reject(new Error('Неправильные почта или пароль'));
+    .then((user) => {
+      if (!user) {
+        return Promise.reject(new Error('Пользователя не существует'));
       }
 
-      return user;
-    });
-  });
-});
+      return bcrypt.compare(password, user.password).then((matched) => {
+        if (!matched) {
+          return Promise.reject(new Error('Неправильные почта или пароль'));
+        }
 
+        return user;
+      });
+    });
+});
 
 export default model<IUser, UserModel>('user', userSchema);
