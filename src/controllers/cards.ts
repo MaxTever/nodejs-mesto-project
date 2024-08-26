@@ -19,9 +19,14 @@ export const getCards = (req: Request, res: Response) => {
     });
 };
 
-export const createCard = (req: Request, res: Response) => {
+
+interface AuthRequest extends Request {
+  user?: { _id: string };
+}
+
+export const createCard = (req: AuthRequest, res: Response) => {
   const { name, link } = req.body;
-  const owner = '66ca23636985228f5d05facc';
+  const owner = req.user?._id;
   Card.create({ name, link, owner })
     .then((card) => res.status(STATUS_CREATED).json(card))
     .catch((err) => {
@@ -32,11 +37,15 @@ export const createCard = (req: Request, res: Response) => {
     });
 };
 
-export const deleteCard = async (req: Request, res: Response) => {
+export const deleteCard = async (req: AuthRequest, res: Response) => {
   try {
     const card = await Card.findByIdAndDelete(req.params.cardId);
     if (!card) {
       return res.status(STATUS_NOT_FOUND).json({ message: 'Карточка не найдена' });
+    }
+
+    if (card.owner.toString() !== req.user?._id ) {
+      return res.status(STATUS_BAD_REQUEST).json({ message: 'Вы не являетесь владельцем карточки' });
     }
 
     return res.status(STATUS_OK).json({ message: 'Карточка удалена' });
@@ -48,8 +57,8 @@ export const deleteCard = async (req: Request, res: Response) => {
   }
 };
 
-export const likeCard = async (req: Request, res: Response) => {
-  const owner = '66ca23636985228f5d05facc';
+export const likeCard = async (req: AuthRequest, res: Response) => {
+  const owner = req.user?._id;
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -70,8 +79,8 @@ export const likeCard = async (req: Request, res: Response) => {
   }
 };
 
-export const dislikeCard = async (req: Request, res: Response) => {
-  const owner = '66ca23636985228f5d05facc';
+export const dislikeCard = async (req: AuthRequest, res: Response) => {
+  const owner = req.user?._id;
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
