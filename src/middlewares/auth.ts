@@ -6,6 +6,8 @@ interface SessionRequest extends Request {
     user?: string | JwtPayload;
 }
 
+const { JWT_SECRET = 'super-strong-secret'} = process.env;
+
 const extractBearerToken = (header: string) => header.replace('Bearer ', '');
 
 export default (req: SessionRequest, res: Response, next: NextFunction) => {
@@ -19,7 +21,7 @@ export default (req: SessionRequest, res: Response, next: NextFunction) => {
   let payload;
 
   try {
-    payload = jwt.verify(token, 'super-strong-secret');
+    payload = jwt.verify(token, `${JWT_SECRET}`);
     req.user = payload; // записываем пейлоуд в объект запроса
     next(); // пропускаем запрос дальше
   } catch (err) {

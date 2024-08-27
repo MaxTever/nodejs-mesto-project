@@ -43,7 +43,10 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
       email,
       password: hash,
     }))
-    .then((user) => { res.status(STATUS_CREATED).send(user); })
+    .then((user) => {
+      const { password, ...userWithoutPassword } = user.toObject();
+      res.status(STATUS_CREATED).send(userWithoutPassword);
+    })
     .catch((err) => {
       if (err.code === 11000) {
         return next(new CONFLICT_ERROR('Пользователь с таким email уже существует'));
@@ -55,12 +58,14 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
     });
 };
 
+const { JWT_SECRET = 'super-strong-secret'} = process.env;
+
 export const login = (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
   return User.findUserByCredentials(email, password)
     .then((user) => {
       res.send({
-        token: jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' }),
+        token: jwt.sign({ _id: user._id }, `${JWT_SECRET}`, { expiresIn: '7d' }),
       });
     })
     .catch((err) => {
@@ -85,9 +90,9 @@ export const getCurrentUser = (req: AuthenticatedRequest, res: Response, next: N
     });
 };
 
-export const updateUser = (req: Request, res: Response, next: NextFunction) => {
+export const updateUser = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
-  User.findByIdAndUpdate('66ca23636985228f5d05facc', { name, about }, { new: true, runValidators: true })
+  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => {
       res.status(STATUS_OK).send({ data: user });
     })
@@ -102,9 +107,9 @@ export const updateUser = (req: Request, res: Response, next: NextFunction) => {
     });
 };
 
-export const updateUserAvatar = (req: Request, res: Response, next: NextFunction) => {
+export const updateUserAvatar = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const { avatar } = req.body;
-  User.findByIdAndUpdate('66ca23636985228f5d05facc', { avatar }, { new: true, runValidators: true })
+  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       res.send({ data: user });
     })

@@ -11,7 +11,7 @@ import { userValidationSchema } from './middlewares/validation';
 import { errorHandler } from './middlewares/errorHandler';
 import { NOT_FOUND_ERROR } from './helpers/errors';
 
-const { PORT, DB_PATH } = process.env;
+const { PORT = 3000, DB_PATH = 'mongodb://localhost:27017/mestodb' } = process.env;
 
 const app = express();
 

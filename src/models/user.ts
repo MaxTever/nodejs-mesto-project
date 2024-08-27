@@ -3,6 +3,7 @@ import {
 } from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcryptjs';
+import { UNAUTHORIZED_ERROR } from '../helpers/errors';
 
 export interface IUser {
   email: string;
@@ -30,6 +31,7 @@ export const userSchema = new Schema<IUser, UserModel>({
     type: String,
     required: true,
     minlength: 6,
+    select: false,
   },
   name: {
     type: String,
@@ -57,15 +59,15 @@ export const userSchema = new Schema<IUser, UserModel>({
 });
 
 userSchema.static('findUserByCredentials', function findUserByCredentials(email: string, password: string) {
-  return this.findOne({ email })
+  return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        return Promise.reject(new Error('Пользователя не существует'));
+        return Promise.reject(new UNAUTHORIZED_ERROR( 'Пользователь не найден'));
       }
 
       return bcrypt.compare(password, user.password).then((matched) => {
         if (!matched) {
-          return Promise.reject(new Error('Неправильные почта или пароль'));
+          return Promise.reject(new UNAUTHORIZED_ERROR('Неправильные почта или пароль'));
         }
 
         return user;
